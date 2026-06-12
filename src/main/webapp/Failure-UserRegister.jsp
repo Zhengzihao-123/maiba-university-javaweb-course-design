@@ -1,0 +1,25 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>注册失败</title>
+    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/style.css">
+</head>
+<body>
+    <%@ include file="/include/header.jsp" %>
+    
+    <div class="container">
+        <h1>注册失败！</h1>
+        <p style="text-align: center; font-size: 18px; color: red;">
+            ${errorMessage}
+        </p>
+        <p style="text-align: center; margin-top: 20px;">
+            <a href="${pageContext.request.contextPath}/UserRegister.jsp" style="text-decoration: none; color: #1E90FF; font-size: 16px;">返回注册页面</a>
+        </p>
+    </div>
+    
+    <%@ include file="/include/footer.jsp" %>
+</body>
+</html>
