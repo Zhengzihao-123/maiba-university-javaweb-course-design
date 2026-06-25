@@ -1,5 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import="cn.maiba.User" %>
+<%@ page import="cn.maiba.PermissionChecker" %>
+<%
+    User currentUser = (User) session.getAttribute("user");
+    boolean isAdminUser = PermissionChecker.isSuperAdmin(currentUser);
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -17,19 +23,40 @@
                 <tr>
                     <th>ID</th>
                     <th>账号</th>
+                    <% if (isAdminUser) { %>
                     <th>密码</th>
+                    <% } %>
                     <th>昵称</th>
+                    <% if (isAdminUser) { %>
                     <th>年龄</th>
+                    <% } %>
                     <th>邮箱</th>
                 </tr>
-                <c:forEach var="user" items="${userList}">
+                <c:forEach var="userItem" items="${userList}">
                     <tr>
-                        <td>${user.id}</td>
-                        <td><a href="${pageContext.request.contextPath}/logon/UserDetail?userId=${user.id}" style="text-decoration: none; color: #1E90FF;">${user.account}</a></td>
-                        <td>${user.password}</td>
-                        <td>${user.userName}</td>
-                        <td>${user.age}</td>
-                        <td>${user.email}</td>
+                        <td>${userItem.id}</td>
+                        <td><a href="${pageContext.request.contextPath}/logon/UserDetail?userId=${userItem.id}" style="text-decoration: none; color: #1E90FF;">${userItem.account}</a></td>
+                        <% if (isAdminUser) { %>
+                        <td>${userItem.password}</td>
+                        <% } else { %>
+                        <td><span style="color:#999;">***</span></td>
+                        <% } %>
+                        <td>${userItem.userName}</td>
+                        <% if (isAdminUser) { %>
+                        <td>${userItem.age}</td>
+                        <% } else { %>
+                        <td><span style="color:#999;">-</span></td>
+                        <% } %>
+                        <td>
+                            <% 
+                                cn.maiba.User item = (cn.maiba.User) pageContext.getAttribute("userItem");
+                                if (isAdminUser || (currentUser != null && currentUser.getId().equals(item.getId()))) { 
+                            %>
+                                ${userItem.email}
+                            <% } else { %>
+                                <span style="color:#999;">***@***</span>
+                            <% } %>
+                        </td>
                     </tr>
                 </c:forEach>
             </table>

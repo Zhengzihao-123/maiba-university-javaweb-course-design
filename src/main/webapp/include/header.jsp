@@ -1,6 +1,25 @@
 <%@ page import="cn.maiba.User" %>
+<%@ page import="cn.maiba.RoleConstants" %>
+<%@ page import="cn.maiba.PermissionChecker" %>
+<%@ page import="com.maiba.OnlineUserListener" %>
+<%@ page import="cn.maiba.MyDataBase" %>
+<%@ page import="cn.maiba.Board" %>
+<%@ page import="java.util.List" %>
 <%
     User user = (User)session.getAttribute("user");
+    int onlineCount = OnlineUserListener.getOnlineCount();
+    int unreadCount = 0;
+    if (user != null) {
+        unreadCount = MyDataBase.countUnreadMessages(user.getId());
+    }
+    List headerBoardList = (List)request.getAttribute("boardList");
+    if (headerBoardList == null) {
+        headerBoardList = MyDataBase.list(Board.TABLE_NAME);
+    }
+    boolean isAdmin = PermissionChecker.isSuperAdmin(user);
+    boolean isModerator = PermissionChecker.isModerator(user);
+    pageContext.setAttribute("isAdmin", isAdmin);
+    pageContext.setAttribute("isModerator", isModerator);
 %>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -75,7 +94,7 @@
     position: absolute;
     right: 0;
     background-color: white;
-    min-width: 120px;
+    min-width: 150px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
     z-index: 1;
 }
@@ -85,12 +104,43 @@
     text-decoration: none;
     display: block;
     font-size: 14px;
+    border-radius: 0;
 }
 .user-dropdown-content a:hover {
     background-color: #f1f1f1;
 }
 .user-dropdown:hover .user-dropdown-content {
     display: block;
+}
+.online-count {
+    background: rgba(255,255,255,0.2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    color: white;
+    font-size: 14px;
+}
+.online-btn {
+    color: white;
+    text-decoration: none;
+    font-size: 15px;
+    padding: 8px 15px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.online-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+.badge {
+    background-color: #f44336;
+    color: white;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
 }
 </style>
 <div class="header">
@@ -101,15 +151,45 @@
         </a>
         <div class="nav-items">
             <a href="${pageContext.request.contextPath}/logon/ArticleList">首页</a>
+            <div class="user-dropdown">
+                <span class="user-name">板块</span>
+                <div class="user-dropdown-content">
+                    <a href="${pageContext.request.contextPath}/logon/ArticleList">全部板块</a>
+                    <% if (headerBoardList != null) { %>
+                        <% for (Object obj : headerBoardList) { %>
+                            <% Board board = (Board) obj; %>
+                            <a href="${pageContext.request.contextPath}/logon/ArticleList?boardId=<%= board.getId() %>"><%= board.getName() %></a>
+                        <% } %>
+                    <% } %>
+                </div>
+            </div>
+            <a href="${pageContext.request.contextPath}/logon/NoticeList">公告</a>
+            <% if (user != null) { %>
             <a href="${pageContext.request.contextPath}/logon/article-new.jsp">发帖</a>
+            <% } %>
             <a href="${pageContext.request.contextPath}/logon/UserList">用户列表</a>
+            <a href="javascript:void(0)" onclick="showOnlineUsers()" class="online-btn" title="查看在线用户">
+                <span>●</span>在线 ${onlineCount}
+            </a>
             <% if (user != null) { %>
                 <div class="user-dropdown">
-                    <span class="user-name"><%= user.getUserName() %></span>
+                    <span class="user-name"><%= user.getUserName() %>
+                        <% if (isAdmin) { %> <span style="background:#dc3545;padding:2px 6px;border-radius:4px;font-size:10px;">管理员</span> <% } %>
+                        <% if (isModerator) { %> <span style="background:#ffc107;padding:2px 6px;border-radius:4px;font-size:10px;color:#333;">版主</span> <% } %>
+                    </span>
                     <div class="user-dropdown-content">
                         <a href="${pageContext.request.contextPath}/logon/MyArticleList">我的帖子</a>
                         <a href="${pageContext.request.contextPath}/logon/MyRemarkList">我的评论</a>
-                        <a href="${pageContext.request.contextPath}/HandleUserLogout">退出登录</a>
+                        <a href="${pageContext.request.contextPath}/logon/MessageList">我的消息<%= unreadCount > 0 ? "<span class='badge'>" + unreadCount + "</span>" : "" %></a>
+                        <a href="${pageContext.request.contextPath}/logon/UserDetail?userId=${user.id}">个人中心</a>
+                        <% if (isAdmin) { %>
+                            <a href="${pageContext.request.contextPath}/logon/admin/UserList">管理用户</a>
+                            <a href="${pageContext.request.contextPath}/logon/admin/BoardList">板块管理</a>
+                        <% } %>
+                        <% if (isModerator) { %>
+                            <a href="${pageContext.request.contextPath}/logon/admin/BoardList">我的板块管理</a>
+                        <% } %>
+                        <a href="${pageContext.request.contextPath}/logon/HandleUserLogout">退出登录</a>
                     </div>
                 </div>
             <% } else { %>
@@ -119,3 +199,64 @@
         </div>
     </div>
 </div>
+
+<!-- 在线用户弹窗 -->
+<div id="onlineModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:10px; padding:25px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
+            <h3 style="margin:0; color:#333;">当前在线用户</h3>
+            <span style="cursor:pointer; font-size:20px; color:#999; line-height:1;" onclick="closeOnlineModal()">&times;</span>
+        </div>
+        <div id="onlineUserList" style="min-height:50px;">
+            <p style="text-align:center; color:#999;">加载中...</p>
+        </div>
+        <div style="text-align:center; margin-top:15px; padding-top:15px; border-top:1px solid #eee; color:#666; font-size:13px;">
+            当前在线人数：<strong style="color:#667eea;" id="modalOnlineCount">${onlineCount}</strong>
+        </div>
+    </div>
+</div>
+
+<script>
+function showOnlineUsers() {
+    var modal = document.getElementById('onlineModal');
+    modal.style.display = 'flex';
+    
+    fetch('${pageContext.request.contextPath}/OnlineUserList', {credentials: 'same-origin'})
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            var listDiv = document.getElementById('onlineUserList');
+            var countSpan = document.getElementById('modalOnlineCount');
+            countSpan.textContent = data.count;
+            
+            if (!data.users || data.users.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#999;">当前无在线用户</p>';
+                return;
+            }
+            
+            var html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+            data.users.forEach(function(u) {
+                var roleTag = '';
+                if (u.role === 0) roleTag = '<span style="background:#dc3545;color:white;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:5px;">管理员</span>';
+                else if (u.role === 2) roleTag = '<span style="background:#ffc107;color:#333;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:5px;">版主</span>';
+                
+                html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:#f8f9fa; border-radius:6px;">';
+                html += '  <div><strong>' + u.userName + '</strong>' + roleTag + '<div style="color:#666; font-size:12px; margin-top:3px;">' + u.account + '</div></div>';
+                html += '  <span style="color:#4caf50; font-size:12px;">● 在线</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            listDiv.innerHTML = html;
+        })
+        .catch(function(err) {
+            document.getElementById('onlineUserList').innerHTML = '<p style="text-align:center; color:#f44336;">加载失败</p>';
+        });
+}
+
+function closeOnlineModal() {
+    document.getElementById('onlineModal').style.display = 'none';
+}
+
+document.getElementById('onlineModal').addEventListener('click', function(e) {
+    if (e.target === this) closeOnlineModal();
+});
+</script>

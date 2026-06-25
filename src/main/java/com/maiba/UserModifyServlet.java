@@ -18,6 +18,9 @@ public class UserModifyServlet extends HttpServlet {
         
         // 获取用户ID
         String userIdStr = request.getParameter("userId");
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            userIdStr = request.getParameter("id");
+        }
         Integer userId = Integer.valueOf(userIdStr);
         
         // 从数据库中读取用户信息

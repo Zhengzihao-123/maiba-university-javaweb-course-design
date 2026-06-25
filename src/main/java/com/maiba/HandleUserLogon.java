@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.List;
 import cn.maiba.User;
 import cn.maiba.MyDataBase;
@@ -13,6 +14,10 @@ import cn.maiba.DBOperator;
 
 @WebServlet("/user/HandleUserLogon")
 public class HandleUserLogon extends HttpServlet {
+    
+    private static final int MAX_FAILED_ATTEMPTS = 3;
+    private static final long LOCK_DURATION_MINUTES = 15;
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
@@ -35,12 +40,39 @@ public class HandleUserLogon extends HttpServlet {
                     errorMessage = "帐号不存在，登录失败。";
                 } else {
                     User user = (User) userList.get(0);
-                    if (user.getPassword().equals(password)) {
-                        request.getSession().setAttribute("user", user);
-                        loginUser = user;
-                        success = true;
-                    } else {
-                        errorMessage = "密码错误，登录失败。";
+                    
+                    Timestamp lockedTime = user.getLockedTime();
+                    if (lockedTime != null) {
+                        long lockEndTime = lockedTime.getTime() + LOCK_DURATION_MINUTES * 60 * 1000;
+                        if (System.currentTimeMillis() < lockEndTime) {
+                            long remainingMinutes = (lockEndTime - System.currentTimeMillis()) / (60 * 1000);
+                            errorMessage = "账号已被锁定，请" + remainingMinutes + "分钟后再试。";
+                        } else {
+                            MyDataBase.updateUserUnlock(User.TABLE_NAME, user.getId());
+                            user.setLockedTime(null);
+                            user.setFailedAttempts(0);
+                        }
+                    }
+                    
+                    if (errorMessage.isEmpty()) {
+                        if (user.getPassword().equals(password)) {
+                            MyDataBase.updateUserFailedAttempts(User.TABLE_NAME, user.getId(), 0);
+                            request.getSession().setAttribute("user", user);
+                            OnlineUserListener.registerOnlineUser(request.getSession(), user);
+                            loginUser = user;
+                            success = true;
+                        } else {
+                            int newFailedAttempts = user.getFailedAttempts() + 1;
+                            MyDataBase.updateUserFailedAttempts(User.TABLE_NAME, user.getId(), newFailedAttempts);
+                            
+                            if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
+                                MyDataBase.updateUserLockedTime(User.TABLE_NAME, user.getId(), new Timestamp(System.currentTimeMillis()));
+                                errorMessage = "登录失败次数过多，账号已被锁定15分钟。";
+                            } else {
+                                int remainingAttempts = MAX_FAILED_ATTEMPTS - newFailedAttempts;
+                                errorMessage = "密码错误，登录失败。还剩" + remainingAttempts + "次尝试机会。";
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -48,15 +80,15 @@ public class HandleUserLogon extends HttpServlet {
             }
         }
         
-        // 登录成功后，检查是否有需要跳转的URL
         if (success) {
             String redirectUrl = (String) request.getSession().getAttribute("redirectUrl");
             if (redirectUrl != null && !redirectUrl.isEmpty()) {
-                // 清除session中的URL，然后重定向
                 request.getSession().removeAttribute("redirectUrl");
                 response.sendRedirect(redirectUrl);
-                return;
+            } else {
+                response.sendRedirect(request.getContextPath() + "/logon/ArticleList");
             }
+            return;
         }
         
         request.setAttribute("success", success);

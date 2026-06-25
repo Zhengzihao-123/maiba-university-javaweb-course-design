@@ -20,7 +20,7 @@ public class HandleRemarkNew extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
         
         String articleIdStr = request.getParameter("articleId");
-        String remarkContent = request.getParameter("remark");
+        String remarkContent = request.getParameter("content");
         
         Integer articleId = Integer.valueOf(articleIdStr);
         

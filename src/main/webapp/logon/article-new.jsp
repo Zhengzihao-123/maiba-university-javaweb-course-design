@@ -1,5 +1,18 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ page import="cn.maiba.Board" %>
+<%@ page import="cn.maiba.MyDataBase" %>
+<%@ page import="cn.maiba.User" %>
+<%@ page import="java.util.List" %>
+<%
+    User checkUser = (User) session.getAttribute("user");
+    if (checkUser == null) {
+        response.sendRedirect(request.getContextPath() + "/UserLogon.jsp");
+        return;
+    }
+    List boardList = MyDataBase.list(Board.TABLE_NAME);
+    pageContext.setAttribute("boardList", boardList);
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -85,6 +98,16 @@
         </c:if>
         
         <form action="HandleArticleNew" method="post">
+            <div class="form-group">
+                <label for="boardId">所属板块</label>
+                <select id="boardId" name="boardId" required>
+                    <option value="">请选择板块</option>
+                    <c:forEach items="${boardList}" var="board">
+                        <option value="${board.id}">${board.name}</option>
+                    </c:forEach>
+                </select>
+            </div>
+            
             <div class="form-group">
                 <label for="title">标题</label>
                 <input type="text" id="title" name="title" placeholder="请输入帖子标题" value="${title}" required>

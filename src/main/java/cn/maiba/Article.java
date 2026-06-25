@@ -6,22 +6,26 @@ import java.sql.Timestamp;
 public class Article extends MyTableItem {
 	public static final String TABLE_NAME="t_article"; 
 	
-	String title;//文章标题
-	String content;//文章内容
-	Integer userId;//用户ID
-	int remarkNum;//评论数量
-	int hitNum;//点击数量
-	Timestamp createTime;//创建时间
-	Timestamp lastRemarkTime;//最后评论时间
+	String title;
+	String content;
+	Integer userId;
+	Integer boardId;
+	int isTop;
+	int remarkNum;
+	int hitNum;
+	Timestamp createTime;
+	Timestamp lastRemarkTime;
 
 	public Article(){
 		title = "";
 		content = "";
 		userId = 0;
+		boardId = 1;
+		isTop = 0;
 		remarkNum = 0;
 		hitNum = 0 ;
-		createTime = new Timestamp(System.currentTimeMillis());//当前时间
-		lastRemarkTime = new Timestamp(System.currentTimeMillis());//当前时间
+		createTime = new Timestamp(System.currentTimeMillis());
+		lastRemarkTime = new Timestamp(System.currentTimeMillis());
 	}
 	
 	public void IncreaseRemarkNum(){
@@ -32,6 +36,18 @@ public class Article extends MyTableItem {
 		hitNum ++ ;
 	}
 	
+	public int getIsTop() {
+		return isTop;
+	}
+
+	public void setIsTop(int isTop) {
+		this.isTop = isTop;
+	}
+
+	public boolean isTop() {
+		return isTop == 1;
+	}
+
 	public int getRemarkNum() {
 		return remarkNum;
 	}
@@ -78,6 +94,14 @@ public class Article extends MyTableItem {
 
 	public void setUserId(Integer userId) {
 		this.userId = userId;
+	}
+
+	public Integer getBoardId() {
+		return boardId;
+	}
+
+	public void setBoardId(Integer boardId) {
+		this.boardId = boardId;
 	}
 
 	public Timestamp getCreateTime() {
