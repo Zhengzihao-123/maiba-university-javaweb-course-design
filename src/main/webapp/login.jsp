@@ -56,10 +56,10 @@
 <body>
     <div class="container">
         <h1>用户登录</h1>
-        <form action="UserLogon" method="post">
+        <form action="${pageContext.request.contextPath}/user/HandleUserLogon" method="post">
             <div class="form-group">
-                <label for="userName">账号：</label>
-                <input type="text" id="userName" name="userName">
+                <label for="account">账号：</label>
+                <input type="text" id="account" name="account">
             </div>
             <div class="form-group">
                 <label for="password">密码：</label>

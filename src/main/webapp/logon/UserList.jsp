@@ -38,14 +38,10 @@
                         <td><a href="${pageContext.request.contextPath}/logon/UserDetail?userId=${userItem.id}" style="text-decoration: none; color: #1E90FF;">${userItem.account}</a></td>
                         <% if (isAdminUser) { %>
                         <td>${userItem.password}</td>
-                        <% } else { %>
-                        <td><span style="color:#999;">***</span></td>
                         <% } %>
                         <td>${userItem.userName}</td>
                         <% if (isAdminUser) { %>
                         <td>${userItem.age}</td>
-                        <% } else { %>
-                        <td><span style="color:#999;">-</span></td>
                         <% } %>
                         <td>
                             <% 

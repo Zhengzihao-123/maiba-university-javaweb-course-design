@@ -29,11 +29,13 @@ import cn.maiba.User;
 @WebListener
 public class OnlineUserListener implements HttpSessionListener {
     
-    private static int onlineCount = 0;
+    private static int totalOnlineCount = 0;
+    private static int loggedInCount = 0;
     private static final Map<String, User> SESSION_USER_MAP = new ConcurrentHashMap<>();
     
     @Override
     public void sessionCreated(HttpSessionEvent se) {
+        totalOnlineCount++;
     }
     
     @Override
@@ -42,10 +44,14 @@ public class OnlineUserListener implements HttpSessionListener {
         try {
             if (SESSION_USER_MAP.containsKey(session.getId())) {
                 SESSION_USER_MAP.remove(session.getId());
-                onlineCount--;
-                if (onlineCount < 0) {
-                    onlineCount = 0;
+                loggedInCount--;
+                if (loggedInCount < 0) {
+                    loggedInCount = 0;
                 }
+            }
+            totalOnlineCount--;
+            if (totalOnlineCount < 0) {
+                totalOnlineCount = 0;
             }
         } catch (Exception e) {
         }
@@ -56,7 +62,7 @@ public class OnlineUserListener implements HttpSessionListener {
             String sessionId = session.getId();
             if (!SESSION_USER_MAP.containsKey(sessionId)) {
                 SESSION_USER_MAP.put(sessionId, user);
-                onlineCount++;
+                loggedInCount++;
             }
         }
     }
@@ -66,20 +72,28 @@ public class OnlineUserListener implements HttpSessionListener {
             String sessionId = session.getId();
             if (SESSION_USER_MAP.containsKey(sessionId)) {
                 SESSION_USER_MAP.remove(sessionId);
-                onlineCount--;
-                if (onlineCount < 0) {
-                    onlineCount = 0;
+                loggedInCount--;
+                if (loggedInCount < 0) {
+                    loggedInCount = 0;
                 }
             }
         }
     }
     
     public static int getOnlineCount() {
-        return onlineCount;
+        return totalOnlineCount;
+    }
+    
+    public static int getTotalOnlineCount() {
+        return totalOnlineCount;
+    }
+    
+    public static int getLoggedInCount() {
+        return loggedInCount;
     }
     
     public static void setOnlineCount(int count) {
-        onlineCount = count;
+        totalOnlineCount = count;
     }
     
     public static List<User> getOnlineUsers() {

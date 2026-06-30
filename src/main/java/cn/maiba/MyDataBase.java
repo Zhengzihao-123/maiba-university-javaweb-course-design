@@ -58,14 +58,16 @@ public class MyDataBase {
 				return pstmt.executeUpdate() > 0;
 			} else if (tableItem instanceof Notice) {
 				Notice notice = (Notice) tableItem;
-				String sql = "INSERT INTO t_notice(id, title, content, is_active, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?)";
+				String sql = "INSERT INTO t_notice(id, title, content, is_active, category, board_id, create_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 				pstmt = conn.prepareStatement(sql);
 				pstmt.setInt(1, notice.getId());
 				pstmt.setString(2, notice.getTitle());
 				pstmt.setString(3, notice.getContent());
 				pstmt.setInt(4, notice.getIsActive());
-				pstmt.setTimestamp(5, notice.getCreateTime());
-				pstmt.setTimestamp(6, notice.getUpdateTime());
+				pstmt.setInt(5, notice.getCategory());
+				pstmt.setInt(6, notice.getBoardId());
+				pstmt.setTimestamp(7, notice.getCreateTime());
+				pstmt.setTimestamp(8, notice.getUpdateTime());
 				return pstmt.executeUpdate() > 0;
 			} else if (tableItem instanceof Message) {
 				Message message = (Message) tableItem;
@@ -175,6 +177,8 @@ public class MyDataBase {
 					notice.setTitle(rs.getString("title"));
 					notice.setContent(rs.getString("content"));
 					notice.setIsActive(rs.getInt("is_active"));
+					notice.setCategory(rs.getInt("category"));
+					notice.setBoardId(rs.getInt("board_id"));
 					notice.setCreateTime(rs.getTimestamp("create_time"));
 					notice.setUpdateTime(rs.getTimestamp("update_time"));
 					return notice;
@@ -271,13 +275,15 @@ public class MyDataBase {
 				return pstmt.executeUpdate() > 0;
 			} else if (tableItem instanceof Notice) {
 				Notice notice = (Notice) tableItem;
-				String sql = "UPDATE t_notice SET title=?, content=?, is_active=?, update_time=? WHERE id=?";
+				String sql = "UPDATE t_notice SET title=?, content=?, is_active=?, category=?, board_id=?, update_time=? WHERE id=?";
 				pstmt = conn.prepareStatement(sql);
 				pstmt.setString(1, notice.getTitle());
 				pstmt.setString(2, notice.getContent());
 				pstmt.setInt(3, notice.getIsActive());
-				pstmt.setTimestamp(4, notice.getUpdateTime());
-				pstmt.setInt(5, notice.getId());
+				pstmt.setInt(4, notice.getCategory());
+				pstmt.setInt(5, notice.getBoardId());
+				pstmt.setTimestamp(6, notice.getUpdateTime());
+				pstmt.setInt(7, notice.getId());
 				return pstmt.executeUpdate() > 0;
 			} else if (tableItem instanceof Message) {
 				Message message = (Message) tableItem;
@@ -453,6 +459,8 @@ public class MyDataBase {
 					notice.setTitle(rs.getString("title"));
 					notice.setContent(rs.getString("content"));
 					notice.setIsActive(rs.getInt("is_active"));
+					notice.setCategory(rs.getInt("category"));
+					notice.setBoardId(rs.getInt("board_id"));
 					notice.setCreateTime(rs.getTimestamp("create_time"));
 					notice.setUpdateTime(rs.getTimestamp("update_time"));
 					noticeList.add(notice);
@@ -624,6 +632,32 @@ public class MyDataBase {
 					boardList.add(board);
 				}
 				return boardList.isEmpty() ? null : boardList;
+			} else if ("t_notice".equals(tableName)) {
+				List<Notice> noticeList = new ArrayList<>();
+				String sql = "SELECT * FROM t_notice WHERE " + tableColName + " = ? ORDER BY create_time DESC";
+				pstmt = conn.prepareStatement(sql);
+				
+				if (tableColValue instanceof Integer) {
+					pstmt.setInt(1, (Integer) tableColValue);
+				} else {
+					pstmt.setString(1, tableColValue.toString());
+				}
+				
+				rs = pstmt.executeQuery();
+				
+				while (rs.next()) {
+					Notice notice = new Notice();
+					notice.setId(rs.getInt("id"));
+					notice.setTitle(rs.getString("title"));
+					notice.setContent(rs.getString("content"));
+					notice.setIsActive(rs.getInt("is_active"));
+					notice.setCategory(rs.getInt("category"));
+					notice.setBoardId(rs.getInt("board_id"));
+					notice.setCreateTime(rs.getTimestamp("create_time"));
+					notice.setUpdateTime(rs.getTimestamp("update_time"));
+					noticeList.add(notice);
+				}
+				return noticeList.isEmpty() ? null : noticeList;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -942,6 +976,108 @@ public class MyDataBase {
 				pstmt.executeUpdate();
 			} catch (SQLException e) {
 			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			DBUtil.close(conn, pstmt);
+		}
+	}
+	
+	public static void initNoticeTable() {
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		
+		try {
+			conn = DBUtil.getConnection();
+			
+			try {
+				String addCategory = "ALTER TABLE t_notice ADD COLUMN category INT DEFAULT 0 AFTER is_active";
+				pstmt = conn.prepareStatement(addCategory);
+				pstmt.executeUpdate();
+			} catch (SQLException e) {
+			}
+			
+			try {
+				String addBoardId = "ALTER TABLE t_notice ADD COLUMN board_id INT DEFAULT 0 AFTER category";
+				pstmt = conn.prepareStatement(addBoardId);
+				pstmt.executeUpdate();
+			} catch (SQLException e) {
+			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			DBUtil.close(conn, pstmt);
+		}
+	}
+	
+	public static void initNewTables() {
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		
+		try {
+			conn = DBUtil.getConnection();
+			
+			String createLoginLogTable = "CREATE TABLE IF NOT EXISTS t_login_log (" +
+					"id INT PRIMARY KEY AUTO_INCREMENT," +
+					"user_id INT NOT NULL," +
+					"login_ip VARCHAR(50) NOT NULL," +
+					"login_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+					"logout_time DATETIME NULL," +
+					"login_status INT NOT NULL," +
+					"failure_reason VARCHAR(200)," +
+					"INDEX idx_user (user_id)," +
+					"INDEX idx_time (login_time)," +
+					"FOREIGN KEY (user_id) REFERENCES t_user(id) ON DELETE CASCADE" +
+					") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+			pstmt = conn.prepareStatement(createLoginLogTable);
+			pstmt.executeUpdate();
+			
+			String createOnlineSessionTable = "CREATE TABLE IF NOT EXISTS t_online_session (" +
+					"id INT PRIMARY KEY AUTO_INCREMENT," +
+					"session_id VARCHAR(100) NOT NULL UNIQUE," +
+					"user_id INT NULL," +
+					"ip_address VARCHAR(50) NOT NULL," +
+					"is_guest INT DEFAULT 1," +
+					"last_active_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+					"created_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+					"expired_at DATETIME NULL," +
+					"INDEX idx_session (session_id)," +
+					"INDEX idx_user (user_id)," +
+					"INDEX idx_guest (is_guest)," +
+					"INDEX idx_last_active (last_active_time)," +
+					"FOREIGN KEY (user_id) REFERENCES t_user(id) ON DELETE CASCADE" +
+					") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+			pstmt = conn.prepareStatement(createOnlineSessionTable);
+			pstmt.executeUpdate();
+			
+			String createUserBlacklistTable = "CREATE TABLE IF NOT EXISTS t_user_blacklist (" +
+					"id INT PRIMARY KEY AUTO_INCREMENT," +
+					"user_id INT NOT NULL UNIQUE," +
+					"reason VARCHAR(500)," +
+					"banned_by INT NULL," +
+					"banned_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+					"unbanned_at DATETIME NULL," +
+					"INDEX idx_user (user_id)," +
+					"FOREIGN KEY (user_id) REFERENCES t_user(id) ON DELETE CASCADE," +
+					"FOREIGN KEY (banned_by) REFERENCES t_user(id) ON DELETE SET NULL" +
+					") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+			pstmt = conn.prepareStatement(createUserBlacklistTable);
+			pstmt.executeUpdate();
+			
+			String createIpBlacklistTable = "CREATE TABLE IF NOT EXISTS t_ip_blacklist (" +
+					"id INT PRIMARY KEY AUTO_INCREMENT," +
+					"ip_address VARCHAR(50) NOT NULL UNIQUE," +
+					"reason VARCHAR(500)," +
+					"banned_by INT NULL," +
+					"banned_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+					"unbanned_at DATETIME NULL," +
+					"INDEX idx_ip (ip_address)," +
+					"FOREIGN KEY (banned_by) REFERENCES t_user(id) ON DELETE SET NULL" +
+					") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+			pstmt = conn.prepareStatement(createIpBlacklistTable);
+			pstmt.executeUpdate();
 			
 		} catch (SQLException e) {
 			e.printStackTrace();

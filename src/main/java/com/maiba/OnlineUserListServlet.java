@@ -39,11 +39,15 @@ public class OnlineUserListServlet extends HttpServlet {
         }
         
         result.put("count", OnlineUserListener.getOnlineCount());
+        result.put("totalCount", OnlineUserListener.getTotalOnlineCount());
+        result.put("loggedInCount", OnlineUserListener.getLoggedInCount());
         result.put("users", users);
         
         StringBuilder json = new StringBuilder();
         json.append("{");
         json.append("\"count\":").append(OnlineUserListener.getOnlineCount()).append(",");
+        json.append("\"totalCount\":").append(OnlineUserListener.getTotalOnlineCount()).append(",");
+        json.append("\"loggedInCount\":").append(OnlineUserListener.getLoggedInCount()).append(",");
         json.append("\"users\":[");
         for (int i = 0; i < users.size(); i++) {
             if (i > 0) json.append(",");

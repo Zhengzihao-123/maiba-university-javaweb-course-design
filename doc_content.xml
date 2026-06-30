@@ -1,0 +1,151 @@
+<title>《Web程序设计》期末考核</title>
+
+<h1>广东技术师范大学</h1>
+
+<p>课程名称：Web程序设计</p>
+<p>实验项目：Web程序设计期末考核</p>
+<p>实验时间：2026-06</p>
+<p>姓    名：</p>
+<p>学    号：</p>
+<p>实验班级：24计科</p>
+<p>指导教师：李伟键</p>
+<p>计算机科学学院 工业中心202实验室</p>
+<p>二〇二六年六月三十日</p>
+
+<hr/>
+
+<h1>一、功能实现以及相关截图</h1>
+
+<h2>功能①：划分角色和权限</h2>
+<p>系统划分了四种角色：超级管理员、版主、普通用户、游客，不同角色拥有不同的权限。</p>
+
+<h3>【游客】</h3>
+<p>游客可以查看所有帖子，但不能发表评论。</p>
+
+<h3>【普通用户】</h3>
+<p>普通用户可以发布、修改、删除自己的帖子，可以查看并评论所有帖子。</p>
+
+<h3>【版主】</h3>
+<p>版主可以删除本板块的帖子，管理自己的板块。</p>
+
+<h3>【超级管理员】</h3>
+<p>超级管理员拥有所有权限，可以管理所有用户、所有帖子、所有板块。</p>
+
+<h2>功能②：帖子管理</h2>
+<p>支持帖子的发布、查看、修改、删除、置顶、搜索等功能。</p>
+
+<h2>功能③：评论功能</h2>
+<p>登录用户可以对帖子发表评论，查看自己的评论。</p>
+
+<h2>功能④：板块管理</h2>
+<p>管理员可以创建、修改、删除板块，每个板块可以设置版主。</p>
+
+<h2>功能⑤：用户管理</h2>
+<p>管理员可以查看所有用户，删除用户，解锁被锁定的账号。</p>
+
+<h2>功能⑥：权限系统</h2>
+<p>系统实现了完善的权限校验，不同角色拥有不同的操作权限。</p>
+
+<h2>功能⑦：站内信模块</h2>
+<p>用户之间可以互发站内信，查看消息列表和消息详情，显示未读消息数量。</p>
+
+<h2>功能⑧：系统公告模块</h2>
+<p>管理员可以发布系统公告，所有用户都可以查看公告。</p>
+
+<h2>功能⑨：在线人数统计</h2>
+<p>系统实时统计在线用户数量，显示在线用户列表。</p>
+
+<h2>功能⑩：账号安全</h2>
+<p>用户登录密码错误3次后，账号会被锁定15分钟，管理员可以解锁被锁定的账号。</p>
+
+<hr/>
+
+<h1>二、数据库结构及建表语句</h1>
+
+<h2>数据库表结构</h2>
+<p>系统数据库名为maiba，包含以下数据表：</p>
+<ul>
+<li>t_user：用户表</li>
+<li>t_article：文章表</li>
+<li>t_remark：评论表</li>
+<li>t_notice：公告表</li>
+<li>t_message：站内信表</li>
+<li>t_board：板块表</li>
+</ul>
+
+<h2>建表语句</h2>
+
+<h3>①用户表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_user (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    account VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    user_name VARCHAR(50) NOT NULL,
+    age INT DEFAULT 0,
+    email VARCHAR(100),
+    role INT DEFAULT 1,
+    failed_attempts INT DEFAULT 0,
+    locked_time DATETIME NULL,
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</code></pre>
+
+<h3>②文章表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_article (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    user_id INT NOT NULL,
+    board_id INT NOT NULL DEFAULT 1,
+    is_top INT DEFAULT 0,
+    remark_num INT DEFAULT 0,
+    hit_num INT DEFAULT 0,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_remark_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES t_user(id),
+    FOREIGN KEY (board_id) REFERENCES t_board(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</code></pre>
+
+<h3>③评论表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_remark (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    article_id INT NOT NULL,
+    user_id INT NOT NULL,
+    remark TEXT NOT NULL,
+    remark_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (article_id) REFERENCES t_article(id),
+    FOREIGN KEY (user_id) REFERENCES t_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</code></pre>
+
+<h3>④公告表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_notice (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    is_active INT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</code></pre>
+
+<h3>⑤站内信表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_message (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    is_read INT DEFAULT 0,
+    send_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES t_user(id),
+    FOREIGN KEY (receiver_id) REFERENCES t_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</code></pre>
+
+<h3>⑥板块表：</h3>
+<pre lang="sql"><code>CREATE TABLE IF NOT EXISTS t_board (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE COMMENT '板块名称',
+    description TEXT COMMENT '板块描述',
+    moderator_id INT NULL COMMENT '版主用户ID（预留）',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    sort_order INT DEFAULT 0 COMMENT '排序权重',
+    FOREIGN KEY (moderator_id) REFERENCES t_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='板块表';</code></pre>

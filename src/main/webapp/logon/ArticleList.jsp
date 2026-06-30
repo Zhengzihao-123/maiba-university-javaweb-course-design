@@ -18,6 +18,19 @@
         }
     }
     pageContext.setAttribute("boardNameMap", boardNameMap);
+    
+    User currentUser2 = (User) session.getAttribute("user");
+    java.util.Set<Integer> moderatorBoardIds = new java.util.HashSet<>();
+    if (currentUser2 != null && PermissionChecker.isModerator(currentUser2)) {
+        List myBoards = MyDataBase.select(Board.TABLE_NAME, "moderator_id", currentUser2.getId(), "=");
+        if (myBoards != null) {
+            for (Object obj : myBoards) {
+                Board b = (Board) obj;
+                moderatorBoardIds.add(b.getId());
+            }
+        }
+    }
+    pageContext.setAttribute("moderatorBoardIds", moderatorBoardIds);
 %>
 <!DOCTYPE html>
 <html>
@@ -185,7 +198,10 @@
                                     </a>
                                     <a href="${pageContext.request.contextPath}/logon/HandleArticleDelete?id=${article.id}" class="btn btn-danger" onclick="return confirm('确定要删除这篇帖子吗？')">删除</a>
                                 </c:if>
-                                <c:if test="${isModerator}">
+                                <c:if test="${isModerator && moderatorBoardIds.contains(article.boardId)}">
+                                    <a href="${pageContext.request.contextPath}/logon/HandleArticleTop?articleId=${article.id}&isTop=${article.isTop == 1 ? 0 : 1}" class="btn btn-top">
+                                        ${article.isTop == 1 ? '取消置顶' : '置顶'}
+                                    </a>
                                     <a href="${pageContext.request.contextPath}/logon/HandleArticleDelete?id=${article.id}" class="btn btn-danger" onclick="return confirm('确定要删除这篇帖子吗？')">删除</a>
                                 </c:if>
                             </td>

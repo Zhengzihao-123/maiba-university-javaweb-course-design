@@ -25,6 +25,7 @@ public class LogonFilter implements Filter {
             "/UserLogon.jsp",                              // 登录页
             "/UserRegister.jsp",                           // 注册页
             "/HandleUserLogon",                           // 登录处理
+            "/user/HandleUserLogon",                      // 登录处理（新路径）
             "/HandleUserRegister",                         // 注册处理
             "/logon/NoticeList",                           // 公告列表（公开）
             "/logon/ArticleList",                          // 帖子列表（公开浏览）

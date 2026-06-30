@@ -1,6 +1,7 @@
 package cn.maiba;
 
 import java.util.List;
+import cn.maiba.Notice;
 
 /**
  * 权限校验工具类
@@ -209,5 +210,58 @@ public class PermissionChecker {
      */
     public static boolean canPostComment(User user) {
         return isLoggedIn(user);
+    }
+    
+    /**
+     * 判断是否可以发布公告
+     * - 超级管理员：可以发布系统公告
+     * - 版主：可以发布自己管理板块的公告
+     */
+    public static boolean canPostNotice(User user) {
+        return isSuperAdmin(user) || isModerator(user);
+    }
+    
+    /**
+     * 判断是否可以发布系统公告
+     * 只有超级管理员可以发布系统公告
+     */
+    public static boolean canPostSystemNotice(User user) {
+        return isSuperAdmin(user);
+    }
+    
+    /**
+     * 判断是否可以发布板块公告
+     * 超级管理员和版主都可以发布板块公告
+     * 版主只能发布自己管理板块的公告
+     */
+    public static boolean canPostBoardNotice(User user, Integer boardId) {
+        if (user == null || boardId == null) {
+            return false;
+        }
+        if (isSuperAdmin(user)) {
+            return true;
+        }
+        if (isModerator(user)) {
+            return isModeratorOfBoard(user, boardId);
+        }
+        return false;
+    }
+    
+    /**
+     * 判断是否可以删除公告
+     * - 超级管理员：可删除任何公告
+     * - 版主：可删除自己管理板块的公告
+     */
+    public static boolean canDeleteNotice(User user, Notice notice) {
+        if (user == null || notice == null) {
+            return false;
+        }
+        if (isSuperAdmin(user)) {
+            return true;
+        }
+        if (isModerator(user) && notice.getCategory() == Notice.CATEGORY_BOARD) {
+            return isModeratorOfBoard(user, notice.getBoardId());
+        }
+        return false;
     }
 }

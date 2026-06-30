@@ -5,9 +5,14 @@ import java.sql.Timestamp;
 public class Notice extends MyTableItem {
 	public static final String TABLE_NAME = "t_notice";
 	
+	public static final int CATEGORY_SYSTEM = 0;
+	public static final int CATEGORY_BOARD = 1;
+	
 	String title;
 	String content;
 	int isActive;
+	int category;
+	int boardId;
 	Timestamp createTime;
 	Timestamp updateTime;
 	
@@ -15,6 +20,8 @@ public class Notice extends MyTableItem {
 		title = "";
 		content = "";
 		isActive = 1;
+		category = CATEGORY_SYSTEM;
+		boardId = 0;
 		createTime = new Timestamp(System.currentTimeMillis());
 		updateTime = new Timestamp(System.currentTimeMillis());
 	}
@@ -45,6 +52,22 @@ public class Notice extends MyTableItem {
 
 	public boolean isActive() {
 		return isActive == 1;
+	}
+
+	public int getCategory() {
+		return category;
+	}
+
+	public void setCategory(int category) {
+		this.category = category;
+	}
+
+	public int getBoardId() {
+		return boardId;
+	}
+
+	public void setBoardId(int boardId) {
+		this.boardId = boardId;
 	}
 
 	public Timestamp getCreateTime() {

@@ -4,7 +4,7 @@
 
 ## 🎯 项目简介
 
-麦吧是一个功能完整的校园论坛系统，支持用户注册登录、帖子管理、板块管理、站内信、系统公告等核心功能，并具备完整的权限控制体系。
+麦吧是一个功能完整的校园论坛系统，支持用户注册登录、帖子管理、板块管理、站内信、系统公告等核心功能，并具备完整的权限控制体系。由广东技术师范大学开发。
 
 ## ✨ 功能特性
 
@@ -16,33 +16,45 @@
 
 ### 帖子管理
 - 帖子发布/查看/修改/删除
-- 帖子模糊搜索
+- 帖子模糊搜索（支持标题和内容）
 - 帖子置顶/取消置顶
 - 评论功能
+- 按板块分类浏览
 
 ### 板块管理
 - 板块增删改查
 - 版主分配
 - 帖子按板块分类
 
+### 公告管理
+- **系统公告**：超级管理员可发布全站公告
+- **板块公告**：版主可发布所属板块公告
+- 公告分类筛选（按类型/板块）
+- 公告删除功能
+
 ### 权限系统
-- 四级角色：超级管理员、版主、普通用户、游客
-- 路径级权限拦截
-- 业务级权限校验
+- 四级角色：超级管理员(0)、版主(2)、普通用户(1)、游客
+- 路径级权限拦截（LogonFilter）
+- 业务级权限校验（PermissionChecker）
 
 ### 其他功能
 - 站内信（发送、接收、未读计数）
-- 系统公告管理
-- 实时在线人数统计
+- 实时在线人数统计（包含登录用户和游客）
+- 版主专属"我的板块管理"入口
 
 ## 👥 角色权限
 
-| 角色 | 角色值 | 权限范围 |
-|------|--------|----------|
-| 超级管理员 | 0 | 全站管理权限（用户管理、板块管理、帖子管理、公告管理） |
-| 版主 | 2 | 管理所属板块帖子 + 普通用户所有权限 |
-| 普通用户 | 1 | 发布/修改/删除自己的帖子、评论、站内信 |
-| 游客 | - | 浏览帖子、公告，无法发布内容 |
+| 功能 | 游客 | 普通用户 | 版主 | 超级管理员 |
+|------|------|----------|------|------------|
+| 查看帖子 | ✅ | ✅ | ✅ | ✅ |
+| 查看公告 | ✅ | ✅ | ✅ | ✅ |
+| 发布帖子 | ❌ | ✅ | ✅ | ✅ |
+| 删除帖子 | ❌ | 仅自己 | 仅本版 | ✅全部 |
+| 置顶帖子 | ❌ | ❌ | 仅本版 | ✅全部 |
+| 发布公告 | ❌ | ❌ | ✅板块公告 | ✅全部 |
+| 删除公告 | ❌ | ❌ | 仅本版公告 | ✅全部 |
+| 用户管理 | ❌ | ❌ | ❌ | ✅ |
+| 板块管理 | ❌ | ❌ | ❌ | ✅ |
 
 ## 🛠️ 技术栈
 
@@ -51,6 +63,7 @@
 - **服务器**: Jetty 9.4
 - **构建工具**: Maven
 - **测试**: JUnit 4
+- **Java版本**: JDK 17
 
 ## 📁 项目结构
 
@@ -60,19 +73,26 @@ maiba/
 │   ├── cn/maiba/          # 实体类和工具类
 │   │   ├── Article.java   # 帖子实体
 │   │   ├── Board.java     # 板块实体
+│   │   ├── Notice.java    # 公告实体（支持分类）
 │   │   ├── Message.java   # 消息实体
 │   │   ├── User.java      # 用户实体
 │   │   ├── PermissionChecker.java  # 权限校验工具
 │   │   └── MyDataBase.java         # 数据库操作类
 │   └── com/maiba/         # Servlet 和过滤器
 │       ├── HandleUserLogon.java    # 登录处理
-│       ├── MessageListServlet.java # 消息列表
-│       ├── OnlineUserListener.java # 在线用户监听
+│       ├── HandleNoticeDelete.java # 公告删除
+│       ├── HandleArticleTop.java   # 帖子置顶
+│       ├── NoticeNewServlet.java   # 公告发布页面
+│       ├── OnlineUserListener.java # 在线用户监听（含游客）
 │       └── ...
 ├── src/main/webapp/       # JSP 页面
 │   ├── logon/             # 登录后页面
+│   │   ├── ArticleList.jsp    # 帖子列表
+│   │   ├── NoticeList.jsp     # 公告列表（支持分类筛选）
+│   │   ├── NoticeNew.jsp      # 发布公告
+│   │   └── UserList.jsp       # 用户列表
 │   ├── include/           # 公共组件
-│   └── admin/             # 管理员页面
+│   └── WEB-INF/web.xml    # Servlet 3.0 配置
 └── pom.xml                # Maven 配置
 ```
 
@@ -90,7 +110,11 @@ maiba/
 CREATE DATABASE maiba CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. **修改数据库配置**
+2. **导入数据表**
+
+执行 `src/main/resources/create_table.sql` 创建所有数据表
+
+3. **修改数据库配置**
 
 编辑 `src/main/java/cn/maiba/DBUtil.java`，修改数据库连接信息：
 ```java
@@ -99,16 +123,16 @@ private static final String USERNAME = "root";
 private static final String PASSWORD = "123456";
 ```
 
-3. **运行项目**
+4. **运行项目**
 ```bash
 mvn jetty:run
 ```
 
-4. **访问系统**
+5. **访问系统**
 
 打开浏览器访问：http://localhost:8084/maiba
 
-5. **初始化测试数据**
+6. **初始化测试数据**
 
 访问：http://localhost:8084/maiba/logon/InitTestData
 
@@ -128,9 +152,16 @@ mvn jetty:run
 - `GET /logon/HandleUserLogout` - 用户退出
 
 ### 帖子接口
-- `GET /logon/ArticleList` - 帖子列表
+- `GET /logon/ArticleList` - 帖子列表（支持板块筛选）
 - `POST /logon/HandleArticleNew` - 发布帖子
 - `GET /logon/ArticleDetail` - 帖子详情
+- `GET /logon/HandleArticleTop` - 帖子置顶/取消置顶
+
+### 公告接口
+- `GET /logon/NoticeList` - 公告列表（支持分类筛选）
+- `GET /logon/NoticeNew` - 发布公告页面
+- `POST /logon/HandleNoticeNew` - 发布公告
+- `GET /logon/HandleNoticeDelete` - 删除公告
 
 ### 消息接口
 - `GET /logon/MessageList` - 消息列表
@@ -138,7 +169,7 @@ mvn jetty:run
 - `GET /logon/MessageDetail` - 消息详情
 
 ### 在线用户接口
-- `GET /OnlineUserList` - 在线用户列表（JSON格式）
+- `GET /OnlineUserList` - 在线用户列表（JSON格式，含游客统计）
 
 ## 🔒 安全特性
 
@@ -146,6 +177,18 @@ mvn jetty:run
 - 权限校验在后端执行，前端仅做按钮隐藏
 - 隐私信息（密码、邮箱、年龄）对非管理员屏蔽
 - 使用 PreparedStatement 防止 SQL 注入
+- Session 过期自动跳转登录页
+
+## 📋 数据库表结构
+
+| 表名 | 说明 |
+|------|------|
+| t_user | 用户表（含角色、锁定状态） |
+| t_board | 板块表（含版主ID） |
+| t_article | 帖子表（含置顶状态、软删除） |
+| t_comment | 评论表 |
+| t_notice | 公告表（含分类、关联板块） |
+| t_message | 站内信表 |
 
 ## 📄 许可证
 
@@ -154,3 +197,7 @@ MIT License
 ## 📞 联系方式
 
 如有问题，请联系：zhengzihao@example.com
+
+---
+
+**麦吧** -- 广东技术师范大学出品

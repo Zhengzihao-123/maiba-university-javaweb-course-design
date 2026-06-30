@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>自动登录</title>
+</head>
+<body>
+    <form id="loginForm" action="http://localhost:8084/maiba/user/HandleUserLogon" method="post">
+        <input type="hidden" name="account" value="admin">
+        <input type="hidden" name="password" value="admin">
+    </form>
+    <script>
+        document.getElementById('loginForm').submit();
+    </script>
+</body>
+</html>

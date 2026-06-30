@@ -34,6 +34,14 @@ public class InitTestDataServlet extends HttpServlet {
             MyDataBase.initBoardTable();
             result.append("<p>板块表初始化完成</p>");
             
+            // 初始化公告表
+            MyDataBase.initNoticeTable();
+            result.append("<p>公告表初始化完成</p>");
+            
+            // 初始化新表（登录日志、在线会话、用户黑名单、IP黑名单）
+            MyDataBase.initNewTables();
+            result.append("<p>新表初始化完成</p>");
+            
             // 获取现有板块
             java.util.List<Board> boardList = MyDataBase.list(Board.TABLE_NAME);
             if (boardList == null || boardList.isEmpty()) {

@@ -8,6 +8,7 @@
 <%
     User user = (User)session.getAttribute("user");
     int onlineCount = OnlineUserListener.getOnlineCount();
+    int loggedInCount = OnlineUserListener.getLoggedInCount();
     int unreadCount = 0;
     if (user != null) {
         unreadCount = MyDataBase.countUnreadMessages(user.getId());
@@ -18,8 +19,17 @@
     }
     boolean isAdmin = PermissionChecker.isSuperAdmin(user);
     boolean isModerator = PermissionChecker.isModerator(user);
+    Integer moderatorBoardId = null;
+    if (isModerator) {
+        List myBoards = MyDataBase.select(Board.TABLE_NAME, "moderator_id", user.getId(), "=");
+        if (myBoards != null && myBoards.size() > 0) {
+            Board firstBoard = (Board) myBoards.get(0);
+            moderatorBoardId = firstBoard.getId();
+        }
+    }
     pageContext.setAttribute("isAdmin", isAdmin);
     pageContext.setAttribute("isModerator", isModerator);
+    pageContext.setAttribute("moderatorBoardId", moderatorBoardId);
 %>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -187,7 +197,7 @@
                             <a href="${pageContext.request.contextPath}/logon/admin/BoardList">板块管理</a>
                         <% } %>
                         <% if (isModerator) { %>
-                            <a href="${pageContext.request.contextPath}/logon/admin/BoardList">我的板块管理</a>
+                            <a href="${pageContext.request.contextPath}/logon/ArticleList?boardId=${moderatorBoardId}">我的板块管理</a>
                         <% } %>
                         <a href="${pageContext.request.contextPath}/logon/HandleUserLogout">退出登录</a>
                     </div>
@@ -211,7 +221,9 @@
             <p style="text-align:center; color:#999;">加载中...</p>
         </div>
         <div style="text-align:center; margin-top:15px; padding-top:15px; border-top:1px solid #eee; color:#666; font-size:13px;">
-            当前在线人数：<strong style="color:#667eea;" id="modalOnlineCount">${onlineCount}</strong>
+            总在线人数：<strong style="color:#667eea;" id="modalTotalCount">${onlineCount}</strong>
+            <br/>
+            登录用户：<strong style="color:#4caf50;" id="modalLoggedInCount">${loggedInCount}</strong>
         </div>
     </div>
 </div>
@@ -225,8 +237,10 @@ function showOnlineUsers() {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             var listDiv = document.getElementById('onlineUserList');
-            var countSpan = document.getElementById('modalOnlineCount');
-            countSpan.textContent = data.count;
+            var totalCountSpan = document.getElementById('modalTotalCount');
+            var loggedInCountSpan = document.getElementById('modalLoggedInCount');
+            totalCountSpan.textContent = data.totalCount;
+            loggedInCountSpan.textContent = data.loggedInCount;
             
             if (!data.users || data.users.length === 0) {
                 listDiv.innerHTML = '<p style="text-align:center; color:#999;">当前无在线用户</p>';
